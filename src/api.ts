@@ -17,6 +17,7 @@ import type {
   PairHandle,
   PairSpec,
 } from "./dialogs";
+import type { ExtensionHelperApi } from "./helper";
 import type { AccountInfo, ExtensionCloud, ExtensionMachine, ExtensionSession } from "./host-info";
 import type {
   Launch,
@@ -52,6 +53,8 @@ export type ExtensionApi = {
   vault?: ExtensionVaultApi;
   /** The Google and Microsoft accounts of the providers its manifest's `connections` names. */
   connections?: ExtensionConnectionsApi;
+  /** The user's own browser, through the prifly Helper extension; see there. Where `api.features` includes "helper". */
+  helper?: ExtensionHelperApi;
   /** A sealed key-value store of this extension's own, for credentials; see `ExtensionSecretsApi`. Where `api.features` includes "secrets". */
   secrets?: ExtensionSecretsApi;
   /**

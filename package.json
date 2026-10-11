@@ -1,6 +1,6 @@
 {
   "name": "@prifly/extension-api",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "The types of prifly's extension contract: what activate(api) is given and what an extension module exports.",
   "license": "UNLICENSED",
   "type": "module",

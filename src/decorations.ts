@@ -24,10 +24,23 @@ export type DecorationIcon =
   | "bug"
   | "bug-off"
   | "trello"
+  | "sentry"
   | "life-buoy"
   | "artemis"
   | "mail"
   | "file-text"
+  | "linkedin"
+  | "message-circle"
+  | "instagram"
+  | "gmail"
+  | "google-docs"
+  | "google-photos"
+  | "google-cloud"
+  | "outlook"
+  | "azure"
+  | "aws"
+  | "whatsapp"
+  | "messenger"
   | "dot";
 
 /**

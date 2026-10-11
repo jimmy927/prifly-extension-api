@@ -26,6 +26,7 @@ export type * from "./api";
 export type * from "./connections";
 export type * from "./decorations";
 export type * from "./dialogs";
+export type * from "./helper";
 export type * from "./host-info";
 export type * from "./launch";
 export type * from "./manifest";

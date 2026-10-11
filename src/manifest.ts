@@ -83,6 +83,8 @@ export type ExtensionManifest = {
   vault?: string[];
   /** The accounts `api.connections` may use for it. */
   connections?: ManifestConnectionEntry[];
+  /** The sites `api.helper` may reach in the reader's browser, as URL match patterns, and why. */
+  helper?: { sites: string[]; why: string };
   /** Stylesheets laid over the window; see prifly's `skin.ts`. */
   skin?: { folder: string; styles: string[]; with?: string[] };
   /** Colour themes and fonts for the pickers; see prifly's `manifest-appearance.ts`. */
