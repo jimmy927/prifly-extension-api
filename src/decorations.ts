@@ -26,6 +26,8 @@ export type DecorationIcon =
   | "trello"
   | "life-buoy"
   | "artemis"
+  | "mail"
+  | "file-text"
   | "dot";
 
 /**

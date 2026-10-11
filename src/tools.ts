@@ -9,6 +9,13 @@ export type ExtensionToolContext = {
   pick(request: ExtensionPick): Promise<ExtensionPickAnswer>;
   /** Aborted when the session or the call goes away. */
   signal: AbortSignal;
+  /**
+   * The calling session's scratchpad folder, made if it is missing: where a
+   * tool that saves files for a session puts them. Reading it throws when
+   * prifly has no transcript to find the folder from, so a tool that never
+   * reads it is never affected. Where `api.features` includes "tool-scratchpad".
+   */
+  readonly scratchpad: string;
 };
 
 export type ExtensionTool = {

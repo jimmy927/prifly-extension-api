@@ -14,6 +14,12 @@ export type ExtensionConnection = {
   scopes: string[];
   /** `needs-sign-in`: the provider ended the grant; `signIn` with its id revives it. */
   state: "ok" | "needs-sign-in";
+  /**
+   * Microsoft: other tenants (Azure guests) whose sign-in alone ended, while
+   * `state` stays ok; `signIn` with the id and the tenant revives one.
+   * Absent on an older prifly, which ends the whole connection instead.
+   */
+  tenantsNeedingSignIn?: string[];
 };
 
 /**
@@ -23,7 +29,13 @@ export type ExtensionConnection = {
  * rather than retrying.
  */
 export type ExtensionNeedsSignIn = {
-  needsSignIn: { connection: string; provider: string; account: string };
+  /**
+   * `tenant`: only that other tenant ended (a Microsoft guest tenant asking
+   * for MFA, a claims challenge there) — the connection still works for its
+   * own tenant and every other; `signIn` with `{ connection, tenant }`
+   * revives it. Left out, the whole connection ended.
+   */
+  needsSignIn: { connection: string; provider: string; account: string; tenant?: string };
 };
 
 export type ExtensionFetchOptions = RequestInit & {
@@ -65,10 +77,13 @@ export type ExtensionConnectionsApi = {
    * `connection` — more scopes on one they connected (incremental consent,
    * e.g. Mail.ReadWrite on the first draft). Only scopes the manifest lists
    * for that provider. Resolves when they finish or give up (5 minutes).
+   * Microsoft, with `connection` and `tenant`: sign that account in again at
+   * one other tenant whose sign-in alone ended (`needsSignIn.tenant`), as the
+   * same person; only that tenant is revived.
    */
   signIn(
     provider: string,
     scopes: string[],
-    options?: { connection?: string; client?: string },
+    options?: { connection?: string; client?: string; tenant?: string },
   ): Promise<ExtensionSignInResult>;
 };

@@ -30,7 +30,7 @@ import type { ExtensionToolsApi, ExtensionVaultApi } from "./tools";
 export type ExtensionApi = {
   /**
    * What this prifly accepts beyond the first version, by name: "pick-amount-limit"
-   * (`limit` on a `ctx.pick` amount), "pick-links" (`links` on a `ctx.pick`), "pick-cells" (`titles` and `cellKinds` on a `ctx.pick`), "panel-open-session" (a panel page's `prifly-open-session` message opens a session, see `panel.ts`), "panel-open-terminal" (a panel page's `prifly-open-terminal` message opens the shell the module's `terminal` export names), "start-session" (`api.start`), "settings" (`api.settings` and `api.onSettings`). Absent on a prifly that predates the list.
+   * (`limit` on a `ctx.pick` amount), "pick-links" (`links` on a `ctx.pick`), "pick-cells" (`titles` and `cellKinds` on a `ctx.pick`), "panel-open-session" (a panel page's `prifly-open-session` message opens a session, see `panel.ts`), "panel-open-terminal" (a panel page's `prifly-open-terminal` message opens the shell the module's `terminal` export names), "start-session" (`api.start`), "settings" (`api.settings` and `api.onSettings`), "open-url" (`api.openUrl`), "tool-scratchpad" (`ctx.scratchpad` of a tool call). Absent on a prifly that predates the list.
    */
   features?: readonly string[];
   /**
@@ -85,6 +85,14 @@ export type ExtensionApi = {
    * session. Also a line in the host's log, under `ext.<id>.notify`.
    */
   notify(text: string, options?: { tone?: DecorationTone; session?: string }): void;
+  /**
+   * Open `url` in the reader's own browser (on Windows, the Windows one, also
+   * when prifly's host runs in WSL). Only http and https are opened: any other
+   * scheme is refused. The answer says whether a browser opened. Also a line in
+   * the host's log, under `ext.<id>.open_url`. Where `api.features` includes
+   * "open-url".
+   */
+  openUrl(url: string): Promise<boolean>;
   /**
    * Replace every machine this extension offers sessions to use, the whole
    * list each time — its rented boxes, and a `provider`-kind machine for
