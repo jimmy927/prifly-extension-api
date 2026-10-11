@@ -29,5 +29,6 @@ export type * from "./dialogs";
 export type * from "./host-info";
 export type * from "./launch";
 export type * from "./manifest";
+export type * from "./secrets";
 export type * from "./settings";
 export type * from "./tools";

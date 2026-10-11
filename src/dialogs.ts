@@ -27,6 +27,58 @@ export type DialogAnswer = { text: string; checked: boolean };
 /** A dialog with number fields, confirmed: each value by its `key`, clamped to its min/max. */
 export type DialogNumbersAnswer = DialogAnswer & { numbers: Record<string, number> };
 
+/** What `api.pair` shows: a dialog for linking a device by QR code or typed code. */
+export type PairSpec = {
+  /** The session the dialog opens over, as for `DialogSpec`. */
+  sessionId?: string;
+  title: string;
+  description?: string;
+  /** A line under the steps. */
+  hint?: string;
+  /** What to do on the phone to scan the QR code, one step a line. */
+  steps: string[];
+  /** The same for typing a code; `steps` are shown when left out. */
+  codeSteps?: string[];
+  /** Whether the "Type a code" tab asks for the phone number, handing it to `PairHandle.phones`. */
+  askPhone: boolean;
+  /** The label of that number field. */
+  phoneLabel?: string;
+};
+
+/** What `PairHandle.update` changes; a field left out keeps its value. */
+export type PairUpdate = {
+  /**
+   * The QR payload. It is drawn in the window and sent nowhere else; null
+   * shows a spinner in its place (none yet, or being renewed).
+   */
+  qr?: string | null;
+  /** The code the reader types on the phone; null clears it. */
+  code?: string | null;
+  /** The line beside the spinner or tick: "Waiting for your phone". */
+  status?: string;
+  /** Linked: the spinner becomes a tick and Cancel becomes Close. */
+  linked?: boolean;
+};
+
+/**
+ * An open pairing dialog. It stays open until the extension calls `close` or
+ * the reader cancels or closes it; a stopped extension's dialogs are closed
+ * by prifly.
+ */
+export type PairHandle = {
+  update(next: PairUpdate): void;
+  /** Closes the dialog in every window; `closed` then resolves "closed". */
+  close(): void;
+  /** Each phone number the reader submits in the code tab, as typed. Ends when the dialog does. */
+  phones: AsyncIterable<string>;
+  /**
+   * How it ended: "cancelled" when the reader cancelled it (or prifly closed
+   * it because the extension stopped) before it was linked; "closed" when
+   * `close` was called, or the reader pressed Close after `linked`.
+   */
+  closed: Promise<"cancelled" | "closed">;
+};
+
 /** An amount the reader confirms with the row (a rental's budget). */
 export type PickAmount = {
   /** "Budget for this rental" */

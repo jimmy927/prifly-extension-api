@@ -14,6 +14,8 @@ import type {
   DialogNumber,
   DialogNumbersAnswer,
   DialogSpec,
+  PairHandle,
+  PairSpec,
 } from "./dialogs";
 import type { AccountInfo, ExtensionCloud, ExtensionMachine, ExtensionSession } from "./host-info";
 import type {
@@ -24,13 +26,14 @@ import type {
   PanelRequest,
   StartAnswer,
 } from "./launch";
+import type { ExtensionSecretsApi } from "./secrets";
 import type { SettingValues } from "./settings";
 import type { ExtensionToolsApi, ExtensionVaultApi } from "./tools";
 
 export type ExtensionApi = {
   /**
    * What this prifly accepts beyond the first version, by name: "pick-amount-limit"
-   * (`limit` on a `ctx.pick` amount), "pick-links" (`links` on a `ctx.pick`), "pick-cells" (`titles` and `cellKinds` on a `ctx.pick`), "panel-open-session" (a panel page's `prifly-open-session` message opens a session, see `panel.ts`), "panel-open-terminal" (a panel page's `prifly-open-terminal` message opens the shell the module's `terminal` export names), "start-session" (`api.start`), "settings" (`api.settings` and `api.onSettings`), "open-url" (`api.openUrl`), "tool-scratchpad" (`ctx.scratchpad` of a tool call). Absent on a prifly that predates the list.
+   * (`limit` on a `ctx.pick` amount), "pick-links" (`links` on a `ctx.pick`), "pick-cells" (`titles` and `cellKinds` on a `ctx.pick`), "panel-open-session" (a panel page's `prifly-open-session` message opens a session, see `panel.ts`), "panel-open-terminal" (a panel page's `prifly-open-terminal` message opens the shell the module's `terminal` export names), "start-session" (`api.start`), "settings" (`api.settings` and `api.onSettings`), "open-url" (`api.openUrl`), "tool-scratchpad" (`ctx.scratchpad` of a tool call), "secrets" (`api.secrets`), "pair-dialog" (`api.pair`). Absent on a prifly that predates the list.
    */
   features?: readonly string[];
   /**
@@ -49,6 +52,8 @@ export type ExtensionApi = {
   vault?: ExtensionVaultApi;
   /** The Google and Microsoft accounts of the providers its manifest's `connections` names. */
   connections?: ExtensionConnectionsApi;
+  /** A sealed key-value store of this extension's own, for credentials; see `ExtensionSecretsApi`. Where `api.features` includes "secrets". */
+  secrets?: ExtensionSecretsApi;
   /**
    * MCP tools this extension serves to every session, as
    * `mcp__prifly__<name>` (`mcp/extension-tools.ts`). Only while it is running.
@@ -175,6 +180,13 @@ export type ExtensionApi = {
   dialog(spec: DialogSpec & { numbers: DialogNumber[] }): Promise<DialogNumbersAnswer | null>;
   dialog(spec: DialogSpec & { checkbox: DialogCheckbox }): Promise<DialogAnswer | null>;
   dialog(spec: DialogSpec): Promise<string | null>;
+  /**
+   * Opens a pairing dialog in every window, for linking a device: a QR code
+   * to scan or a code to type, which the extension keeps current with
+   * `update` as they rotate. The reader may give a phone number in the code
+   * tab (`PairHandle.phones`). Where `api.features` includes "pair-dialog".
+   */
+  pair?(spec: PairSpec): PairHandle;
 };
 
 export type ExtensionModule = {

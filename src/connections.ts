@@ -35,7 +35,19 @@ export type ExtensionNeedsSignIn = {
    * own tenant and every other; `signIn` with `{ connection, tenant }`
    * revives it. Left out, the whole connection ended.
    */
-  needsSignIn: { connection: string; provider: string; account: string; tenant?: string };
+  needsSignIn: {
+    connection: string;
+    provider: string;
+    account: string;
+    tenant?: string;
+    /**
+     * Microsoft: the tenant's consent policy refused (AADSTS65001, 90094 or
+     * 90095), so signing in again cannot help — only the tenant's admin can
+     * approve prifly, at this link. Show it to the reader; absent on an
+     * older prifly and for every other reason.
+     */
+    adminConsentUrl?: string;
+  };
 };
 
 export type ExtensionFetchOptions = RequestInit & {
@@ -49,7 +61,12 @@ export type ExtensionFetchOptions = RequestInit & {
 
 export type ExtensionSignInResult =
   | { ok: true; connection: string; account: string }
-  | { ok: false; message: string };
+  | {
+      ok: false;
+      message: string;
+      /** Microsoft: as `ExtensionNeedsSignIn.needsSignIn.adminConsentUrl`, for a refusal by the tenant's consent policy. */
+      adminConsentUrl?: string;
+    };
 
 /** Added to `ExtensionApi`. Absent on an older prifly: call it as `api.connections?.list(...)`. */
 export type ExtensionConnectionsApi = {
