@@ -6,5 +6,5 @@ the prifly repository, one commit and one tag (`v<version>`) per version.
 Do not edit it here.
 
 ```json
-"@prifly/extension-api": "git+ssh://git@github.com/jimmy927/prifly-extension-api.git#v0.3.0"
+"@prifly/extension-api": "git+ssh://git@github.com/jimmy927/prifly-extension-api.git#v0.4.0"
 ```

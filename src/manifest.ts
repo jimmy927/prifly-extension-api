@@ -9,13 +9,18 @@
 import type { DecorationIcon } from "./decorations";
 import type { SettingField } from "./settings";
 
-/** An account provider `api.connections` can use. */
-export type ConnectionProviderName = "google" | "microsoft";
+/**
+ * An account provider `api.connections` can use. `aws-keys` is an AWS access
+ * key the reader typed into Vault → Connections: requests to it are signed
+ * with SigV4 by the host (`region` and `service` in the fetch options), and
+ * it has no token and no scopes.
+ */
+export type ConnectionProviderName = "google" | "microsoft" | "aws-keys";
 
 /** One provider the extension uses through `api.connections`, and what it asks of it. */
 export type ManifestConnectionEntry = {
   provider: ConnectionProviderName;
-  /** Asked for when the reader connects such an account: `Mail.Read`, a Google scope URL. */
+  /** Asked for when the reader connects such an account: `Mail.Read`, a Google scope URL. Ignored for `aws-keys`. */
   scopes?: string[];
   /** Shown to the reader: what the extension does with the account. */
   why?: string;

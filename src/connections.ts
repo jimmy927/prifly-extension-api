@@ -1,16 +1,26 @@
 /**
  * `api.connections`, as an extension sees it: the Google and Microsoft
- * accounts the reader connected in Vault → Connections, for the providers its
- * manifest's `connections` names.
+ * accounts, and the AWS keys, the reader connected in Vault → Connections,
+ * for the providers its manifest's `connections` names (`"google"`,
+ * `"microsoft"`, `"aws-keys"`).
+ *
+ * An `aws-keys` connection is an IAM user's access key. The extension never
+ * holds it: `fetch` signs the request with AWS Signature Version 4 in the
+ * host, which needs `region` and `service` in its options, and `token`
+ * throws. The manifest entry takes no scopes — what the key may do is the
+ * IAM user's policy.
  */
 
-/** One connected account. Never a token. */
+/** One connected account. Never a token or a secret. */
 export type ExtensionConnection = {
   id: string;
+  /** `google`, `microsoft` or `aws-keys`. */
   provider: string;
+  /** For `aws-keys`: `alias (1234-5678-9012)`, or just the account id. */
   account: string;
-  /** "prifly", or "Your client · <project>". */
+  /** "prifly", or "Your client · <project>"; "Access key" for `aws-keys`. */
   client: string;
+  /** Always empty for `aws-keys`. */
   scopes: string[];
   /** `needs-sign-in`: the provider ended the grant; `signIn` with its id revives it. */
   state: "ok" | "needs-sign-in";
@@ -57,6 +67,19 @@ export type ExtensionFetchOptions = RequestInit & {
   tenant?: string;
   /** Google: the Cloud project quota and billing go to (`x-goog-user-project`). */
   project?: string;
+  /**
+   * `aws-keys`: the region the request is signed for (`eu-north-1`; the global
+   * services sign as `us-east-1`). Required for `aws-keys` and never guessed
+   * from the URL: the host signs with SigV4 and throws a `ConnectionError`
+   * when it is missing. Ignored for the other providers.
+   */
+  region?: string;
+  /** `aws-keys`: the service's signing name (`sts`, `ec2`, `s3`, `logs`). Required for `aws-keys`, as `region`. */
+  service?: string;
+  /** Reserved for a future aws-sso; refused for `aws-keys`. */
+  accountId?: string;
+  /** Reserved for a future aws-sso; refused for `aws-keys`. */
+  roleName?: string;
 };
 
 export type ExtensionSignInResult =
@@ -78,13 +101,23 @@ export type ExtensionConnectionsApi = {
    * their `Retry-After`. A 401 is retried once after a refresh. Throws for a
    * use the host refuses outright: an unknown id, a provider the manifest
    * does not name, a host the token must not go to.
+   *
+   * For `aws-keys` the request is signed with SigV4 instead: pass `region`
+   * and `service` (both required), and only `https://*.amazonaws.com` and
+   * `*.api.aws` URLs are accepted. A 403 saying the clock is off is retried
+   * once; one saying AWS no longer knows the key comes back as
+   * `needsSignIn`.
    */
   fetch(
     id: string,
     request: string | Request,
     options?: ExtensionFetchOptions,
   ): Promise<Response | ExtensionNeedsSignIn>;
-  /** Only the access token, for what cannot go through `fetch`. Keep it no longer than one call. */
+  /**
+   * Only the access token, for what cannot go through `fetch`. Keep it no
+   * longer than one call. Throws a `ConnectionError` for `aws-keys`: there is
+   * no token to give; `fetch` signs.
+   */
   token(
     id: string,
     options?: { resource?: string; tenant?: string },
@@ -97,6 +130,9 @@ export type ExtensionConnectionsApi = {
    * Microsoft, with `connection` and `tenant`: sign that account in again at
    * one other tenant whose sign-in alone ended (`needsSignIn.tenant`), as the
    * same person; only that tenant is revived.
+   *
+   * `signIn("aws-keys", [])` opens the Add AWS key form in the window instead
+   * and resolves once a key is added, or after 5 minutes.
    */
   signIn(
     provider: string,
