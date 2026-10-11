@@ -1,0 +1,21 @@
+{
+  "name": "@prifly/extension-api",
+  "version": "0.1.0",
+  "description": "The types of prifly's extension contract: what activate(api) is given and what an extension module exports.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jimmy927/prifly-extension-api.git"
+  },
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src"
+  ]
+}
