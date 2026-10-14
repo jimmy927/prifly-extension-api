@@ -86,6 +86,13 @@ export type ExtensionMachine = {
   arch?: string;
   /** The argv that runs a command there: `["ssh","root@1.2.3.4","-p","2222"]`. */
   exec?: string[];
+  /**
+   * Every way to reach it, tried in order: a Vast box's direct address, then
+   * its ssh proxy. The host uses the one that answered last first, and moves
+   * to the next when one does not connect. `exec` should be the first route's
+   * argv; left out, `exec` is the one route.
+   */
+  routes?: { label?: string; exec: string[] }[];
   access?: string;
   trust?: "ask-first" | "use-freely";
   notes?: string;

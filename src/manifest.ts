@@ -79,7 +79,7 @@ export type ExtensionManifest = {
   mockupStacks?: string;
   /** A Markdown file whose text is added to every session's system prompt. */
   prompt?: string;
-  /** The vault entries `api.vault.read` may hand it, by name. */
+  /** The vault entries `api.vault.read` (an api-token) and `api.vault.ssh` (an ssh-key) may use, by name. */
   vault?: string[];
   /** The accounts `api.connections` may use for it. */
   connections?: ManifestConnectionEntry[];
@@ -93,6 +93,10 @@ export type ExtensionManifest = {
   menu?: ManifestMenuEntry[];
   snooze?: ManifestSnoozeEntry[];
   launch?: ManifestLaunchEntry[];
+  /**
+   * Panels are for prifly-wide tools (Vast.ai spend, disk space, perf), not for
+   * a service plugin, whose state belongs on its launch board.
+   */
   panels?: ManifestPanelEntry[];
   /** The form in the Extensions dialog; the values reach it as `api.settings`. */
   settings?: SettingField[];

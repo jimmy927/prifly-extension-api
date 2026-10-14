@@ -9,6 +9,7 @@ import type {
   SnoozeOption,
 } from "./decorations";
 import type {
+  ConfirmSpec,
   DialogAnswer,
   DialogCheckbox,
   DialogNumber,
@@ -29,12 +30,13 @@ import type {
 } from "./launch";
 import type { ExtensionSecretsApi } from "./secrets";
 import type { SettingValues } from "./settings";
+import type { ExtensionStateApi } from "./state";
 import type { ExtensionToolsApi, ExtensionVaultApi } from "./tools";
 
 export type ExtensionApi = {
   /**
    * What this prifly accepts beyond the first version, by name: "pick-amount-limit"
-   * (`limit` on a `ctx.pick` amount), "pick-links" (`links` on a `ctx.pick`), "pick-cells" (`titles` and `cellKinds` on a `ctx.pick`), "panel-open-session" (a panel page's `prifly-open-session` message opens a session, see `panel.ts`), "panel-open-terminal" (a panel page's `prifly-open-terminal` message opens the shell the module's `terminal` export names), "start-session" (`api.start`), "settings" (`api.settings` and `api.onSettings`), "open-url" (`api.openUrl`), "tool-scratchpad" (`ctx.scratchpad` of a tool call), "secrets" (`api.secrets`), "pair-dialog" (`api.pair`). Absent on a prifly that predates the list.
+   * (`limit` on a `ctx.pick` amount), "pick-links" (`links` on a `ctx.pick`), "pick-cells" (`titles` and `cellKinds` on a `ctx.pick`), "panel-open-session" (a panel page's `prifly-open-session` message opens a session, see `panel.ts`), "panel-open-terminal" (a panel page's `prifly-open-terminal` message opens the shell the module's `terminal` export names), "start-session" (`api.start`), "settings" (`api.settings` and `api.onSettings`), "open-url" (`api.openUrl`), "tool-scratchpad" (`ctx.scratchpad` of a tool call), "secrets" (`api.secrets`), "pair-dialog" (`api.pair`), "helper" (`api.helper`), "state" (`api.state`), "vault-ssh" (`api.vault.ssh`), "vault-file" (`api.vault.file`), "campaign-holds" (`api.campaigns`), "confirm" (`api.confirm`), "status" (`api.status`). Absent on a prifly that predates the list.
    */
   features?: readonly string[];
   /**
@@ -63,12 +65,21 @@ export type ExtensionApi = {
    */
   tools?: ExtensionToolsApi;
   /**
+   * What the extension keeps for itself — JSON documents and append-only
+   * logs — in prifly's database, so it moves with prifly's data (`state.ts`).
+   * Where `api.features` includes "state".
+   */
+  state?: ExtensionStateApi;
+  /**
    * Replace everything this extension shows. `bySession` is keyed by a
    * session id or any unique start of one (a label has room for 8 characters);
    * items for an id no session has (or that several share) are dropped, and
    * only the items of a session the window shows are drawn, on its banner.
    * `statusBar`: global items for the status bar, independent of which
    * session is open. Nothing else reaches the status bar.
+   * The status bar is for prifly-wide tools (Vast.ai spend, disk space, perf),
+   * not for a service plugin (Gmail, Azure, WhatsApp): pass it `[]` and put
+   * the plugin's state (sign-in missing, consent, keys) on its launch board.
    */
   show(bySession: Record<string, Decoration[]>, statusBar: Decoration[]): void;
   /**
@@ -109,6 +120,17 @@ export type ExtensionApi = {
    * be unique.
    */
   machines: { report(items: ExtensionMachine[]): void };
+  /**
+   * Machines a running campaign needs kept alive, now. Only this extension's
+   * own machines (the keys it gave `machines.report`): one is held while a
+   * campaign's experiment on it is in flight, being measured, or Stuck with
+   * its run perhaps still alive there. Ask before destroying a box — its
+   * lease ending, its budget spent — and for a held one copy `save` off it
+   * and wake `leadSession` with `prompt` rather than destroy it unannounced.
+   * Answered from what the host already holds: asking often costs nothing.
+   * Where `api.features` includes "campaign-holds".
+   */
+  campaigns?: { holds(): CampaignHold[] };
   /**
    * Carry out an action the reader chose from an item's right-click menu, or
    * from the ▾ on one of this extension's machine cards (its machine `key`).
@@ -184,12 +206,42 @@ export type ExtensionApi = {
   dialog(spec: DialogSpec & { checkbox: DialogCheckbox }): Promise<DialogAnswer | null>;
   dialog(spec: DialogSpec): Promise<string | null>;
   /**
+   * Ask the reader before a write: a card over the session whose tool call
+   * is running (or `spec.sessionId`'s) shows `summary` large and `details`
+   * as written, with Confirm and Cancel. True only on Confirm. False on
+   * Cancel or closing it, when the tool call or its session goes away, the
+   * last window closes, the extension stops, 15 minutes pass without an
+   * answer, or there is no session to ask over (said in the host's log as
+   * `ext.confirm_no_session`). Every write a tool makes goes through it
+   * first. Where `api.features` includes "confirm".
+   */
+  confirm?(spec: ConfirmSpec): Promise<boolean>;
+  /**
+   * One line on how the extension stands — "Connected as ada@example.com ·
+   * 41 unread" — shown in Settings → Extensions in place of its description
+   * while it is not empty; "" clears it. The latest call wins, and it is
+   * cleared when the extension stops. Where `api.features` includes "status".
+   */
+  status?(text: string): void;
+  /**
    * Opens a pairing dialog in every window, for linking a device: a QR code
    * to scan or a code to type, which the extension keeps current with
    * `update` as they rotate. The reader may give a phone number in the code
    * tab (`PairHandle.phones`). Where `api.features` includes "pair-dialog".
    */
   pair?(spec: PairSpec): PairHandle;
+};
+
+/** A machine a running campaign needs kept alive (`ExtensionApi.campaigns`). */
+export type CampaignHold = {
+  /** The key the extension gave the machine in `machines.report`. */
+  machineKey: string;
+  /** The campaign's lead session, to wake with `prompt`. */
+  leadSession: string;
+  /** Remote globs to copy off before the machine is destroyed. */
+  save: string[];
+  /** One line: which track/experiment holds it. */
+  reason: string;
 };
 
 export type ExtensionModule = {

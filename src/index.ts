@@ -32,4 +32,5 @@ export type * from "./launch";
 export type * from "./manifest";
 export type * from "./secrets";
 export type * from "./settings";
+export type * from "./state";
 export type * from "./tools";

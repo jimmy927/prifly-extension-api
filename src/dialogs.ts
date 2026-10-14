@@ -1,4 +1,4 @@
-/** `api.dialog` and the pick card an extension tool shows (`ctx.pick`). */
+/** `api.dialog`, `api.confirm` and the pick card an extension tool shows (`ctx.pick`). */
 
 /** What `api.dialog` shows: see there. */
 export type DialogSpec = {
@@ -26,6 +26,24 @@ export type DialogNumber = {
 export type DialogAnswer = { text: string; checked: boolean };
 /** A dialog with number fields, confirmed: each value by its `key`, clamped to its min/max. */
 export type DialogNumbersAnswer = DialogAnswer & { numbers: Record<string, number> };
+
+/** What `api.confirm` shows: see there. */
+export type ConfirmSpec = {
+  /** What the write is, in a few words: "Send an email". */
+  title: string;
+  /** What will happen, in a line or two, shown large: "Send \"Lunch?\" to ada@example.com". */
+  summary: string;
+  /**
+   * Exactly what goes out — the text, the recipients, a diff, the API
+   * request — shown as written in a scrollable monospace block.
+   */
+  details: string;
+  /**
+   * The session to ask over, as for `DialogSpec`. Left out, the session whose
+   * tool call is running: what a tool's write wants.
+   */
+  sessionId?: string;
+};
 
 /** What `api.pair` shows: a dialog for linking a device by QR code or typed code. */
 export type PairSpec = {

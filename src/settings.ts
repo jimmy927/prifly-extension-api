@@ -4,7 +4,7 @@
  * extension.
  */
 
-/** A setting's value: a box, a number, a line of text, or the options ticked. */
+/** A setting's value: a box, a number, a line of text, one option picked, or the options ticked. */
 export type SettingValue = boolean | number | string | string[];
 
 /** Every declared setting's value, by field id, defaults filled in. */
@@ -21,10 +21,14 @@ export type SettingField = {
   label: string;
   /** A line under the control; "" when left out. */
   description?: string;
-  type: "boolean" | "number" | "string" | "choices";
-  /** Fits the type; a list of options for "choices". */
+  type: "boolean" | "number" | "string" | "choices" | "select";
+  /** Fits the type; a list of options for "choices", one of the options for "select". */
   default: SettingValue;
-  /** For "choices": the boxes offered, any number of them ticked. */
+  /**
+   * For "choices": the boxes offered, any number of them ticked. For "select":
+   * the entries of a dropdown, exactly one picked (the value is that string);
+   * the field is dropped unless `default` is one of them.
+   */
   options?: string[];
   /** For "number": its bounds; a value set outside them is moved inside. */
   min?: number;
