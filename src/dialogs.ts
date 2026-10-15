@@ -34,8 +34,15 @@ export type ConfirmSpec = {
   /** What will happen, in a line or two, shown large: "Send \"Lunch?\" to ada@example.com". */
   summary: string;
   /**
-   * Exactly what goes out — the text, the recipients, a diff, the API
-   * request — shown as written in a scrollable monospace block.
+   * The human part — the mail text, the message, the lines that will be
+   * inserted — shown under the summary in normal text, whitespace kept,
+   * scrollable when long. Left out or empty, no box is drawn.
+   */
+  content?: string;
+  /**
+   * The technical part — ids, the API request — shown as written in a
+   * monospace block folded under a "Details" toggle, closed until the reader
+   * opens it.
    */
   details: string;
   /**

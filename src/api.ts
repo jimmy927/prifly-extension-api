@@ -207,8 +207,9 @@ export type ExtensionApi = {
   dialog(spec: DialogSpec): Promise<string | null>;
   /**
    * Ask the reader before a write: a card over the session whose tool call
-   * is running (or `spec.sessionId`'s) shows `summary` large and `details`
-   * as written, with Confirm and Cancel. True only on Confirm. False on
+   * is running (or `spec.sessionId`'s) shows `summary` large, `content` (the
+   * human part) in plain text under it and `details` (the technical part)
+   * folded under a "Details" toggle, with Confirm and Cancel. True only on Confirm. False on
    * Cancel or closing it, when the tool call or its session goes away, the
    * last window closes, the extension stops, 15 minutes pass without an
    * answer, or there is no session to ask over (said in the host's log as
