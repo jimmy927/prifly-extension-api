@@ -113,4 +113,19 @@ export type ExtensionMachine = {
    * and the action's id, after asking `confirm` when it is not "".
    */
   actions?: DecorationAction[];
+  /**
+   * What the host may set up there by itself, over the machine's routes:
+   * "claude-code" lets the reader start a session on it from the New session
+   * dialog before Claude Code is there — the host installs it, records the
+   * capability and signs it in first. Where `api.features` includes
+   * "rent-from-dialog".
+   */
+  setup?: "claude-code";
+  /**
+   * On a `kind: "provider"` machine: the New session dialog offers a "Rent a
+   * <label> box…" row for the kinds of box `needs` names, and the host calls
+   * the `api.onRent` handler when the reader starts one. Where `api.features`
+   * includes "rent-from-dialog".
+   */
+  rent?: { needs: readonly ("cpu" | "gpu")[] };
 };

@@ -15,6 +15,8 @@ import type {
   DialogNumber,
   DialogNumbersAnswer,
   DialogSpec,
+  ExtensionPick,
+  ExtensionPickAnswer,
   PairHandle,
   PairSpec,
 } from "./dialogs";
@@ -36,7 +38,7 @@ import type { ExtensionToolsApi, ExtensionVaultApi } from "./tools";
 export type ExtensionApi = {
   /**
    * What this prifly accepts beyond the first version, by name: "pick-amount-limit"
-   * (`limit` on a `ctx.pick` amount), "pick-links" (`links` on a `ctx.pick`), "pick-cells" (`titles` and `cellKinds` on a `ctx.pick`), "panel-open-session" (a panel page's `prifly-open-session` message opens a session, see `panel.ts`), "panel-open-terminal" (a panel page's `prifly-open-terminal` message opens the shell the module's `terminal` export names), "start-session" (`api.start`), "settings" (`api.settings` and `api.onSettings`), "open-url" (`api.openUrl`), "tool-scratchpad" (`ctx.scratchpad` of a tool call), "secrets" (`api.secrets`), "pair-dialog" (`api.pair`), "helper" (`api.helper`), "state" (`api.state`), "vault-ssh" (`api.vault.ssh`), "vault-file" (`api.vault.file`), "campaign-holds" (`api.campaigns`), "confirm" (`api.confirm`), "status" (`api.status`). Absent on a prifly that predates the list.
+   * (`limit` on a `ctx.pick` amount), "pick-links" (`links` on a `ctx.pick`), "pick-cells" (`titles` and `cellKinds` on a `ctx.pick`), "panel-open-session" (a panel page's `prifly-open-session` message opens a session, see `panel.ts`), "panel-open-terminal" (a panel page's `prifly-open-terminal` message opens the shell the module's `terminal` export names), "start-session" (`api.start`), "settings" (`api.settings` and `api.onSettings`), "open-url" (`api.openUrl`), "tool-scratchpad" (`ctx.scratchpad` of a tool call), "secrets" (`api.secrets`), "pair-dialog" (`api.pair`), "helper" (`api.helper`), "state" (`api.state`), "vault-ssh" (`api.vault.ssh`), "vault-file" (`api.vault.file`), "campaign-holds" (`api.campaigns`), "confirm" (`api.confirm`), "status" (`api.status`), "speech-backend" (`api.setSpeechBackend`), "rent-from-dialog" (`api.onRent`, and `setup` and `rent` on a reported machine). Absent on a prifly that predates the list.
    */
   features?: readonly string[];
   /**
@@ -154,6 +156,18 @@ export type ExtensionApi = {
    * session it started. Offered when `features` has "session-lookup".
    */
   session(id: string): ExtensionSession | null;
+  /**
+   * Rent a box for a session the reader is starting from the New session
+   * dialog's "Rent a <label> box…" row (a `provider` machine reporting
+   * `rent`). The session is already in the sidebar under `req.sessionId`;
+   * show the offers with `ui.pick` over it, rent only once the reader chose,
+   * and answer the new box's machine `key` — the host then waits for it to be
+   * running and reachable by ssh, sets Claude Code up there and starts the
+   * session on it. A reader who cancels the card is answered `ok: false`.
+   * One handler per extension; a second call replaces it. Where
+   * `api.features` includes "rent-from-dialog".
+   */
+  onRent(handler: RentHandler): void;
   /** A line in the host's log, under `ext.<id>.<event>`. */
   log(event: string, fields?: Record<string, string | number | boolean | null>): void;
   /** The extension's own folder: where it keeps its config. */
@@ -225,6 +239,19 @@ export type ExtensionApi = {
    */
   status?(text: string): void;
   /**
+   * Switches the read-aloud engine at runtime: `url` is an http(s) endpoint
+   * that takes `POST <url>/speech` with `{"text": "..."}` and answers with
+   * audio (see docs/speech-engine.md); `null` restores the default (Edge's
+   * voices, or `PRIFLY_SPEECH_URL` when the host was started with one). The
+   * next read-aloud uses it, with no reload or restart. It beats
+   * `PRIFLY_SPEECH_URL`. The last extension to set it owns it: when that
+   * extension stops it goes back to the default, and a stopping extension
+   * that does not own it changes nothing. It is not kept across host
+   * restarts, so call it from `activate()`. Throws on a URL that is not
+   * http(s). Where `api.features` includes "speech-backend".
+   */
+  setSpeechBackend?(url: string | null): void;
+  /**
    * Opens a pairing dialog in every window, for linking a device: a QR code
    * to scan or a code to type, which the extension keeps current with
    * `update` as they rotate. The reader may give a phone number in the code
@@ -232,6 +259,25 @@ export type ExtensionApi = {
    */
   pair?(spec: PairSpec): PairHandle;
 };
+
+/** What the reader asked to rent from the New session dialog (`ExtensionApi.onRent`). */
+export type RentRequest = {
+  /** The session the box is for, already in the sidebar: label the box with it. */
+  sessionId: string;
+  need: "cpu" | "gpu";
+  /** How long the reader expects to need it. */
+  hours: number;
+  /** The first line of the session's prompt, or "New session". */
+  purpose: string;
+};
+
+/** The rented box's machine `key` (as `machines.report` will name it), or why there is none. */
+export type RentResult = { ok: true; key: string } | { ok: false; reason: string };
+
+/** The rent card, shown over the request's session. */
+export type RentUi = { pick: (request: ExtensionPick) => Promise<ExtensionPickAnswer> };
+
+export type RentHandler = (req: RentRequest, ui: RentUi) => Promise<RentResult>;
 
 /** A machine a running campaign needs kept alive (`ExtensionApi.campaigns`). */
 export type CampaignHold = {

@@ -46,11 +46,42 @@ export type ConfirmSpec = {
    */
   details: string;
   /**
+   * A mail the write sends or saves, drawn as the recipient will see it — the
+   * subject, the sender and recipients, the HTML body with its inline
+   * pictures, the attachments — in place of `content`. A prifly that predates
+   * it shows `content` and `details` only, so keep them filled.
+   */
+  mail?: ConfirmMail;
+  /**
    * The session to ask over, as for `DialogSpec`. Left out, the session whose
    * tool call is running: what a tool's write wants.
    */
   sessionId?: string;
 };
+
+/** A mail on a confirm card: see `ConfirmSpec.mail`. */
+export type ConfirmMail = {
+  /** "Ada Lovelace <ada@example.com>", or left out for the signed-in account. */
+  from?: string;
+  to: string;
+  cc?: string;
+  bcc?: string;
+  subject: string;
+  /** Marked as a draft, as Gmail shows one in its thread. */
+  draft?: boolean;
+  /** The plain text: drawn when there is no `html`. */
+  text: string;
+  /**
+   * The HTML part as it goes out. `cid:` references resolve to `images` by
+   * `id`; nothing else is loaded (no remote images, no scripts).
+   */
+  html?: string;
+  /** The inline pictures `html` names by `cid:`: png, jpeg, gif or webp. */
+  images?: ConfirmMailImage[];
+  attachments?: ConfirmMailFile[];
+};
+export type ConfirmMailImage = { id: string; mimeType: string; bytes: Uint8Array };
+export type ConfirmMailFile = { filename: string; mimeType: string; size: number };
 
 /** What `api.pair` shows: a dialog for linking a device by QR code or typed code. */
 export type PairSpec = {
