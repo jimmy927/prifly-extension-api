@@ -37,6 +37,21 @@ export type ExtensionToolsApi = {
    * running sees a change only after it reconnects.
    */
   register(tools: ExtensionTool[]): void;
+  /**
+   * Call a tool another extension serves and get its text. Only a tool the
+   * manifest's `reads` lists is called; any other name is refused, and that
+   * list is the only guard that the tool reads: one that changes something
+   * without asking the reader still runs. A tool that asks the reader anything
+   * (a confirm or a pick card) is refused, and a call that runs past 30 s
+   * answers with an error. Never throws:
+   * failures come back as `ok: false` with why. Only where `api.features`
+   * includes "read-tools"; absent on an older prifly: call it as
+   * `api.tools?.read?.(...)`.
+   */
+  read?(
+    name: string,
+    args: Record<string, unknown>,
+  ): Promise<{ ok: true; text: string } | { ok: false; error: string }>;
 };
 
 /** Added to `ExtensionApi`. Absent on an older prifly: call it as `api.vault?.read(...)`. */
@@ -56,9 +71,12 @@ export type ExtensionVaultApi = {
    * Run `argv` — `ssh`, `scp`, `sftp` or `rsync`, by name or full path — with
    * the vault's `ssh-key` entry `name` handed to it, and get back its exit
    * code and both streams with every form of the key replaced by
-   * `[vault:<name>]`. The key never reaches the extension: a throwaway
-   * `ssh-agent` holds it (`SSH_AUTH_SOCK`) and is stopped when the command
-   * ends.
+   * `[vault:<name>]`. The key never reaches the extension: on Linux and macOS
+   * a throwaway `ssh-agent` holds it (`SSH_AUTH_SOCK`); on Windows it is a
+   * file only the user can read, given to `ssh`, `scp` and `sftp` as
+   * `-i <file> -o IdentitiesOnly=yes` and to an `rsync` without an `-e` of
+   * its own as `-e "ssh -i …"`, named in `PRIFLY_SSH_KEY_FILE` and
+   * `GIT_SSH_COMMAND` too, and removed when the command ends.
    *
    * The same rules as `read`: the manifest's `vault` list must name the
    * entry, it must be an `ssh-key`, and its level where the extension lives

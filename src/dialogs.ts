@@ -53,11 +53,102 @@ export type ConfirmSpec = {
    */
   mail?: ConfirmMail;
   /**
+   * A document edit drawn as the document will read afterwards, in place of
+   * `content`: the paragraphs it changes with their neighbours, unchanged runs
+   * folded. A prifly that predates it shows `content` and `details` only, so
+   * keep them filled. Where `api.features` includes "confirm-doc".
+   */
+  doc?: ConfirmDoc;
+  /**
+   * Calendar events to add or delete, drawn as an agenda — a bordered list,
+   * the day on its first row, the time, the title with its place and repeat
+   * text — in place of `content`. When both `content` and `events` are given
+   * the card draws `events` and ignores `content`; `content` is what a prifly
+   * that predates it shows, so keep it filled. Where `api.features` includes
+   * "confirm-events".
+   */
+  events?: ConfirmEvents;
+  /**
+   * The pictures the write sends — a file going out on a messenger — drawn above
+   * `content` so the reader sees what goes out: png, jpeg, gif or webp. Ignored on
+   * a card with `mail`. A prifly that predates it shows `content` and `details` only.
+   */
+  images?: ConfirmImage[];
+  /**
    * The session to ask over, as for `DialogSpec`. Left out, the session whose
    * tool call is running: what a tool's write wants.
    */
   sessionId?: string;
 };
+
+/** What `api.askSnooze` asks the reader: see there. */
+export type AskSnoozeSpec = {
+  /** What the session waits for, the Snoozed list's line: "Until 2f03e1a4 is live, then 1 day". */
+  label: string;
+  /** What the session is told on waking, shown on the card; left out, no such line. */
+  wake?: string;
+  /**
+   * When it wakes at the latest, epoch ms: the reader may change it on the card.
+   * At most 7 days from now (a later one is cut to 7 days), at least a minute;
+   * left out, 3 days.
+   */
+  until?: number;
+};
+
+/**
+ * The reader's answer to `api.askSnooze`. `until` is the end they confirmed
+ * (epoch ms) and `edited` whether they changed it from the one asked. Not ok:
+ * `reason` is "cancelled" for a plain no, "gone" when the session or the
+ * extension went away while the card was open, "replaced" when a later ask
+ * for the same session took the card's place, "refused" for a spec that
+ * cannot be asked over, else the note the reader wrote on the
+ * card instead of a yes.
+ */
+export type AskSnoozeAnswer =
+  | { ok: true; until: number; edited: boolean }
+  | { ok: false; reason: string };
+
+/** A document edit on a confirm card: see `ConfirmSpec.doc`. */
+export type ConfirmDoc = {
+  /** One line over the redline: "9 changes: 8 paragraphs added, 1 removed, 4 words replaced". */
+  counts: string;
+  blocks: ConfirmDocBlock[];
+};
+/** A paragraph, or a run of unchanged ones drawn folded as "N unchanged paragraphs" that opens on click. */
+export type ConfirmDocBlock = ConfirmDocParagraph | { unchanged: ConfirmDocParagraph[] };
+export type ConfirmDocParagraph = {
+  style: "title" | "subtitle" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "normal";
+  bullet?: boolean;
+  spans: ConfirmDocSpan[];
+  /** The whole paragraph is new, or goes. */
+  change?: "added" | "removed";
+  /** A format change, shown as a small tag beside it: "Heading 1 → Heading 2". */
+  note?: string;
+};
+export type ConfirmDocSpan = { text: string; mark?: "added" | "removed" };
+
+/** Calendar events on a confirm card: see `ConfirmSpec.events`. */
+export type ConfirmEvents = {
+  /** "delete" draws the titles struck through. */
+  action: "add" | "delete";
+  /** One entry per day, its label as written ("Sun 8 Nov", "Sat 21 – Sun 22 Nov"). */
+  days: {
+    day: string;
+    events: {
+      /** As written: "17:50–19:15", "All day". */
+      time: string;
+      title: string;
+      where?: string;
+      /** "Every Sunday". */
+      repeats?: string;
+      /** On a delete, the whole recurring series goes: drawn as a "Whole series" badge. */
+      series?: boolean;
+    }[];
+  }[];
+};
+
+/** A picture on a confirm card: see `ConfirmSpec.images`. */
+export type ConfirmImage = { mimeType: string; bytes: Uint8Array; name?: string };
 
 /** A mail on a confirm card: see `ConfirmSpec.mail`. */
 export type ConfirmMail = {
@@ -80,8 +171,24 @@ export type ConfirmMail = {
   images?: ConfirmMailImage[];
   attachments?: ConfirmMailFile[];
 };
-export type ConfirmMailImage = { id: string; mimeType: string; bytes: Uint8Array };
-export type ConfirmMailFile = { filename: string; mimeType: string; size: number };
+export type ConfirmMailImage = {
+  id: string;
+  mimeType: string;
+  bytes: Uint8Array;
+  /** The marker name the text uses for it, `[image: name]`: its caption, and where that marker places it. */
+  name?: string;
+};
+export type ConfirmMailFile = {
+  filename: string;
+  mimeType: string;
+  size: number;
+  /**
+   * The file as it goes out. Given, its tile on the card opens it in the
+   * system's default app, so the reader can look before confirming; left
+   * out, the tile only names it.
+   */
+  bytes?: Uint8Array;
+};
 
 /** What `api.pair` shows: a dialog for linking a device by QR code or typed code. */
 export type PairSpec = {

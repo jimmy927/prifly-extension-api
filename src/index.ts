@@ -29,6 +29,7 @@ export type * from "./dialogs";
 export type * from "./helper";
 export type * from "./host-info";
 export type * from "./launch";
+export type * from "./llm";
 export type * from "./manifest";
 export type * from "./secrets";
 export type * from "./settings";

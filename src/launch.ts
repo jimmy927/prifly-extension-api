@@ -130,6 +130,15 @@ export type Launch = {
   prompt: string;
   /** Where to work; left out, the reader chooses as usual. */
   cwd?: string;
+  /**
+   * The machine `cwd` is on, an id as `ExtensionSession.machine` carries (a
+   * WSL distro under a host on Windows: "wsl-ubuntu-20.04"); null or absent
+   * for the host's own disk. The New session form opens with "Run on" set to
+   * it and the worktree made there, and `api.start` starts there. Where
+   * `api.features` includes "launch-machine", the sibling of "git-there";
+   * without it the folder is looked for on the host and the start fails.
+   */
+  machine?: string | null;
   /** A suggested name for the session and its worktree. */
   name?: string;
   /** A line for the chooser, whether or not a session follows. */

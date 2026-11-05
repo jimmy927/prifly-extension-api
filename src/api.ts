@@ -9,6 +9,9 @@ import type {
   SnoozeOption,
 } from "./decorations";
 import type {
+  AskSnoozeAnswer,
+  AskSnoozeSpec,
+  ConfirmMail,
   ConfirmSpec,
   DialogAnswer,
   DialogCheckbox,
@@ -30,6 +33,7 @@ import type {
   PanelRequest,
   StartAnswer,
 } from "./launch";
+import type { ExtensionLlmApi } from "./llm";
 import type { ExtensionSecretsApi } from "./secrets";
 import type { SettingValues } from "./settings";
 import type { ExtensionStateApi } from "./state";
@@ -38,7 +42,7 @@ import type { ExtensionToolsApi, ExtensionVaultApi } from "./tools";
 export type ExtensionApi = {
   /**
    * What this prifly accepts beyond the first version, by name: "pick-amount-limit"
-   * (`limit` on a `ctx.pick` amount), "pick-links" (`links` on a `ctx.pick`), "pick-cells" (`titles` and `cellKinds` on a `ctx.pick`), "panel-open-session" (a panel page's `prifly-open-session` message opens a session, see `panel.ts`), "panel-open-terminal" (a panel page's `prifly-open-terminal` message opens the shell the module's `terminal` export names), "start-session" (`api.start`), "settings" (`api.settings` and `api.onSettings`), "open-url" (`api.openUrl`), "tool-scratchpad" (`ctx.scratchpad` of a tool call), "secrets" (`api.secrets`), "pair-dialog" (`api.pair`), "helper" (`api.helper`), "state" (`api.state`), "vault-ssh" (`api.vault.ssh`), "vault-file" (`api.vault.file`), "campaign-holds" (`api.campaigns`), "confirm" (`api.confirm`), "status" (`api.status`), "speech-backend" (`api.setSpeechBackend`), "rent-from-dialog" (`api.onRent`, and `setup` and `rent` on a reported machine). Absent on a prifly that predates the list.
+   * (`limit` on a `ctx.pick` amount), "pick-links" (`links` on a `ctx.pick`), "pick-cells" (`titles` and `cellKinds` on a `ctx.pick`), "panel-open-session" (a panel page's `prifly-open-session` message opens a session, see `panel.ts`), "panel-open-terminal" (a panel page's `prifly-open-terminal` message opens the shell the module's `terminal` export names), "start-session" (`api.start`), "settings" (`api.settings` and `api.onSettings`), "open-url" (`api.openUrl`), "open-url-apps" (`api.openUrl` also opens `whatsapp:` and `trello:` links in their desktop apps), "tool-scratchpad" (`ctx.scratchpad` of a tool call), "secrets" (`api.secrets`), "pair-dialog" (`api.pair`), "helper" (`api.helper`), "state" (`api.state`), "vault-ssh" (`api.vault.ssh`), "vault-file" (`api.vault.file`), "campaign-holds" (`api.campaigns`), "confirm" (`api.confirm`), "choose-mail" (`api.chooseMail`), "confirm-edit" (`api.confirmEdit`), "choose-mail-edit" (`api.chooseMailEdit`), "status" (`api.status`), "speech-backend" (`api.setSpeechBackend`), "rent-from-dialog" (`api.onRent`, and `setup` and `rent` on a reported machine), "git-there" (`api.git`, and `machine` on a session), "git-row-decorations" (`gitRow` on a session's decoration), "launch-machine" (`machine` on a `Launch`), "session-apps" (`apps` on a session, and `api.onSessionApps`), "ask-snooze" (`api.askSnooze`; with it, `api.snooze` is refused outside a handler for the reader's clicks), "session-facts" (`brief`, `repo`, `branch`, `waitsOn`, `asksYou`, `snoozedUntil` and `parentId` on a session), "read-tools" (`api.tools.read`, for the tools the manifest's `reads` lists), "llm-ask" (`api.llm`), "confirm-doc" (`doc` on a `ConfirmSpec`), "confirm-events" (`events` on a `ConfirmSpec`). Absent on a prifly that predates the list.
    */
   features?: readonly string[];
   /**
@@ -59,6 +63,12 @@ export type ExtensionApi = {
   connections?: ExtensionConnectionsApi;
   /** The user's own browser, through the prifly Helper extension; see there. Where `api.features` includes "helper". */
   helper?: ExtensionHelperApi;
+  /**
+   * Ask a model through what the reader has set up, without a key; see
+   * `ExtensionLlmApi`. Only on the tiers the manifest's `llm` lists. Where
+   * `api.features` includes "llm-ask".
+   */
+  llm?: ExtensionLlmApi;
   /** A sealed key-value store of this extension's own, for credentials; see `ExtensionSecretsApi`. Where `api.features` includes "secrets". */
   secrets?: ExtensionSecretsApi;
   /**
@@ -108,12 +118,41 @@ export type ExtensionApi = {
   notify(text: string, options?: { tone?: DecorationTone; session?: string }): void;
   /**
    * Open `url` in the reader's own browser (on Windows, the Windows one, also
-   * when prifly's host runs in WSL). Only http and https are opened: any other
-   * scheme is refused. The answer says whether a browser opened. Also a line in
-   * the host's log, under `ext.<id>.open_url`. Where `api.features` includes
-   * "open-url".
+   * when prifly's host runs in WSL). http and https are opened in the browser;
+   * where `api.features` includes "open-url-apps", so are `whatsapp:` and
+   * `trello:` links (`whatsapp://send?phone=46701234567`), through the app the
+   * OS has registered for the scheme. Any other scheme (`file:`, `javascript:`,
+   * `ms-settings:`, any custom one) and any string that is no URL is refused,
+   * and the answer is false. The answer says whether it opened.
+   *
+   * No app for the scheme: on Windows (and from a WSL host, which asks the
+   * Windows side) prifly reads the registry, `HKCR\<scheme>` with a "URL
+   * Protocol" value, before launching; when it is absent nothing is launched
+   * and the answer is false. That read is the only signal: the launchers'
+   * exit codes do not say, and a stale registration left by an uninstalled app
+   * still counts as a handler. Where prifly cannot tell (macOS, Linux, or a
+   * registry read that fails or is slow) it launches and answers true when the
+   * launcher itself succeeded, which says nothing about an app opening; the
+   * OS may show its own "get an app" prompt.
+   *
+   * Also a line in the host's log, under `ext.<id>.open_url`: the origin of a
+   * web page, the scheme of an app link, never the path or query (a phone
+   * number, a token). Where `api.features` includes "open-url".
    */
   openUrl(url: string): Promise<boolean>;
+  /**
+   * One git command in the checkout `cwd`, run where that checkout is: here,
+   * or on `machine` (a session's `machine`, `ExtensionSession`) through its
+   * node agent — a WSL session's `/home/...` is no folder of a host on
+   * Windows. What git printed and its exit code; a machine that cannot be
+   * asked answers code 1 with why in `err`. Where `api.features` includes
+   * "git-there".
+   */
+  git(
+    cwd: string,
+    args: readonly string[],
+    machine?: string | null,
+  ): Promise<{ code: number; out: string; err: string }>;
   /**
    * Replace every machine this extension offers sessions to use, the whole
    * list each time — its rented boxes, and a `provider`-kind machine for
@@ -157,6 +196,13 @@ export type ExtensionApi = {
    */
   session(id: string): ExtensionSession | null;
   /**
+   * Called with the session, its `apps` current, whenever the states of the
+   * apps in its App tab change: one starts, comes up, fails or stops. Re-ask
+   * `show` there to decorate the session by what runs. One handler; a second
+   * call replaces it. Where `api.features` includes "session-apps".
+   */
+  onSessionApps?(handler: (session: ExtensionSession) => void): void;
+  /**
    * Rent a box for a session the reader is starting from the New session
    * dialog's "Rent a <label> box…" row (a `provider` machine reporting
    * `rent`). The session is already in the sidebar under `req.sessionId`;
@@ -188,8 +234,15 @@ export type ExtensionApi = {
    * so asking often costs nothing and shows a new reading at most every poll.
    */
   accounts(): AccountInfo[];
-  /** Sends `text` into the session as a <prifly-notice> (shown as prifly's, not the user's); resumes it first if it ended. Clears any snooze on it. */
-  prompt(sessionId: string, text: string): Promise<{ delivered: boolean }>;
+  /**
+   * Sends `text` into the session as a <prifly-notice> (shown as prifly's, not the user's); resumes it first if it ended. Clears any snooze on it.
+   * `event` says what happened, as data: `{ kind: "deploy", sha: "62dc5ab2…" }` when a commit went live. The notice row keeps it, so a proposal made before it can tell the reader something happened since (kind: lower-case words, sha: 7-40 hex digits; anything else is left out with a warning).
+   */
+  prompt(
+    sessionId: string,
+    text: string,
+    event?: { kind: string; sha: string },
+  ): Promise<{ delivered: boolean }>;
   /**
    * Start a session from one of this extension's launcher items by itself —
    * a new Sentry error becomes a session without a click — exactly as
@@ -206,8 +259,34 @@ export type ExtensionApi = {
    * Where `api.features` includes "start-session".
    */
   start(launchId: string, key: string): Promise<StartAnswer>;
-  /** Snoozes the session until `until` (epoch ms), or until the extension wakes it when `until` is null. `label` replaces "Back at …" in the Snoozed list, e.g. "Until 77257ba3 is live". `null` as the whole argument clears the snooze. */
+  /**
+   * Snoozes the session at once, with no card: only for what the reader just
+   * did, so the host accepts it only while one of the extension's handlers for
+   * the reader's clicks runs (`onAction`, the module's `action` and `snooze`
+   * exports, an item's own menu). Anywhere else (a timer, a queue a session
+   * filled, `activate`) it throws, saying to use `askSnooze`: a session must
+   * never be able to put itself away without the reader confirming on the
+   * card. `null` as the whole argument clears a snooze and is never refused;
+   * a session this extension snoozed already may be given a new `until` or
+   * `label` outside a click. Snoozes the session until `until` (epoch ms), at
+   * most 7 days from now (a later one is cut to 7 days). With `until` null it
+   * lasts 3 days, or until the extension wakes it before. `label` replaces
+   * "Back at …" in the Snoozed list, e.g. "Until 77257ba3 is live".
+   */
   snooze(sessionId: string, snooze: { until: number | null; label?: string } | null): void;
+  /**
+   * Ask the reader to snooze the session, on the same card `snooze_until`
+   * shows: what it waits for (`spec.label`), what it is told on waking
+   * (`spec.wake`), who asks (this extension's name) and the latest wake-up,
+   * which the reader may change (7 days at most). Nothing is snoozed until
+   * they click Snooze; then the session is marked, signed with this
+   * extension, and the answer says the end they confirmed. This is the call
+   * for a request that came from a session (a program it ran from its shell)
+   * or from a timer. A second ask for the same session replaces the first
+   * card, which answers `{ ok: false, reason: "replaced" }`. Where `api.features`
+   * includes "ask-snooze".
+   */
+  askSnooze?(sessionId: string, spec: AskSnoozeSpec): Promise<AskSnoozeAnswer>;
   /**
    * Opens a modal dialog in the window over that session; resolves with the
    * edited text on confirm, null on cancel/close. With `checkbox`, a labelled
@@ -225,12 +304,45 @@ export type ExtensionApi = {
    * human part) in plain text under it and `details` (the technical part)
    * folded under a "Details" toggle, with Confirm and Cancel. True only on Confirm. False on
    * Cancel or closing it, when the tool call or its session goes away, the
-   * last window closes, the extension stops, 15 minutes pass without an
-   * answer, or there is no session to ask over (said in the host's log as
+   * last window closes, the extension stops, or there is no session to ask over (said in the host's log as
    * `ext.confirm_no_session`). Every write a tool makes goes through it
    * first. Where `api.features` includes "confirm".
    */
   confirm?(spec: ConfirmSpec): Promise<boolean>;
+  /**
+   * Ask the reader what to do with a mail: the same card as `confirm`, the
+   * mail drawn as it goes out, with "Save as draft" and "Send now" in place
+   * of Confirm. The reader chooses, not the tool: "draft" or "send", null on
+   * Cancel and on every no `confirm` answers no to. "send" only after a
+   * second click on Send in the window; no key sends. Where `api.features`
+   * includes "choose-mail".
+   */
+  chooseMail?(spec: ConfirmSpec & { mail: ConfirmMail }): Promise<"draft" | "send" | null>;
+  /**
+   * `confirm` with the text the reader may change: the same card, but
+   * `content` (required here) is drawn as an editable box, whitespace kept,
+   * growing and then scrolling. Resolves with the text as the reader left it
+   * when they Confirm (an empty box answers ""), null on Cancel, on feedback
+   * and on every no `confirm` answers false to. Where `api.features`
+   * includes "confirm-edit".
+   */
+  confirmEdit?(spec: ConfirmSpec & { content: string }): Promise<string | null>;
+  /**
+   * `chooseMail` with the text the reader may change: the subject and the
+   * body's plain `mail.text` are editable fields; the inline pictures
+   * (`mail.images`) and the attachments stay shown. A line reading exactly
+   * `[picture N]` or `[image:name]` in the text is a marker the extension
+   * resolves: it stays visible and editable as plain text, and the card draws
+   * the mail from that text with each picture at its marker (`name` on a
+   * `ConfirmMailImage` is the name `[image:name]` uses). Send takes the
+   * same two clicks as in `chooseMail`; no key sends. Resolves with the
+   * choice and the subject and text as the reader left them, null on Cancel
+   * and on every no `confirm` answers false to. Where `api.features`
+   * includes "choose-mail-edit".
+   */
+  chooseMailEdit?(
+    spec: ConfirmSpec & { mail: ConfirmMail },
+  ): Promise<{ choice: "draft" | "send"; subject: string; text: string } | null>;
   /**
    * One line on how the extension stands — "Connected as ada@example.com ·
    * 41 unread" — shown in Settings → Extensions in place of its description

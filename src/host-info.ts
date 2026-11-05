@@ -69,8 +69,68 @@ export type AccountInfo = {
   freeResets: AccountFreeReset | null;
 };
 
+/**
+ * Where one app of a session's App tab is: `starting` (building, spawned, or
+ * waiting for its port), `running` (ready), `failed` (it did not come up, or
+ * ended on its own), `stopped` (the reader stopped it). Closed: the app board's
+ * own states (`AppState` in `@prifly/wire`), which these must match.
+ */
+export type ExtensionAppState = "starting" | "running" | "failed" | "stopped";
+
+/** One app of a session's App tab that prifly has a run of. */
+export type ExtensionSessionApp = {
+  /** Its id in the project's `.prifly/run.md`: "odi-prod". */
+  id: string;
+  state: ExtensionAppState;
+};
+
 /** A session the host knows, for an extension to match its things against. */
-export type ExtensionSession = { id: string; title: string; cwd: string; state: string };
+export type ExtensionSession = {
+  id: string;
+  title: string;
+  cwd: string;
+  state: string;
+  /**
+   * The machine its checkout is on, for `api.git`, when that machine's agent
+   * runs git there (a WSL distro under a host on Windows); null or absent
+   * for here. Where `api.features` includes "git-there".
+   */
+  machine?: string | null;
+  /**
+   * The apps of its App tab that have a run, in the order they were started,
+   * with their states: `[{ id: "odi-prod", state: "running" }]`. [] for a
+   * session with none; absent on an older one `api.session` finds in the
+   * history index. A change reaches `api.onSessionApps`. Where `api.features` includes
+   * "session-apps"; absent on a prifly that predates it.
+   */
+  apps?: ExtensionSessionApp[];
+  /**
+   * The session's own status lists as its brief holds them (each status block
+   * and fold merged into it; not its children's):
+   * what is done (the texts), what is next, what is blocked, and what is
+   * blocked on the reader. Absent when it has no brief. Where `api.features`
+   * includes "session-facts".
+   */
+  brief?: { done: string[]; next: string[]; blocked: string[]; blockedOnYou: string[] };
+  /** The repository its checkout's card names ("jimmy927/prifly"); absent without a card. "session-facts". */
+  repo?: string;
+  /** The branch its checkout is on, from the same card; absent without one. "session-facts". */
+  branch?: string;
+  /**
+   * The 8-character ids of other sessions it waits on, read from the machines
+   * its busy facts name ("land-to-master-child-zone (b0914ada) building …").
+   * Absent when it waits on none. "session-facts".
+   */
+  waitsOn?: string[];
+  /** True while it asks the reader something (a card above the composer); absent otherwise. "session-facts". */
+  asksYou?: boolean;
+  /** When a snooze on it ends, as an ISO time; absent when it is not snoozed. "session-facts". */
+  snoozedUntil?: string;
+  /** The full id of the session that started it; absent for one nothing started. "session-facts". */
+  parentId?: string;
+  /** True when the reader archived the session; absent otherwise. Archived sessions stay in the list. "session-facts". */
+  archived?: boolean;
+};
 
 /**
  * One machine an extension offers sessions to use — a rented Vast.ai box —

@@ -7,6 +7,7 @@
  */
 
 import type { DecorationIcon } from "./decorations";
+import type { LlmTier } from "./llm";
 import type { SettingField } from "./settings";
 
 /**
@@ -81,10 +82,18 @@ export type ExtensionManifest = {
   prompt?: string;
   /** The vault entries `api.vault.read` (an api-token) and `api.vault.ssh` (an ssh-key) may use, by name. */
   vault?: string[];
+  /** The tools other extensions serve that `api.tools.read` may call, by name; any other is refused. */
+  reads?: string[];
   /** The accounts `api.connections` may use for it. */
   connections?: ManifestConnectionEntry[];
   /** The sites `api.helper` may reach in the reader's browser, as URL match patterns, and why. */
   helper?: { sites: string[]; why: string };
+  /**
+   * The model tiers `api.llm.ask` may use, and why, shown to the reader on
+   * the consent card: `{ "tiers": ["fast"], "why": "Suggests branch names" }`.
+   * Left out, or a tier not listed, and every ask on it is `not-allowed`.
+   */
+  llm?: { tiers: LlmTier[]; why: string };
   /** Stylesheets laid over the window; see prifly's `skin.ts`. */
   skin?: { folder: string; styles: string[]; with?: string[] };
   /** Colour themes and fonts for the pickers; see prifly's `manifest-appearance.ts`. */

@@ -41,6 +41,7 @@ export type DecorationIcon =
   | "aws"
   | "whatsapp"
   | "messenger"
+  | "prifly"
   | "dot";
 
 /**
@@ -136,6 +137,15 @@ export type Decoration = {
    * neither is said. Only where `api.features` includes "archive-follow-ups".
    */
   place?: string | undefined;
+  /**
+   * Also draw the item as a compact chip (icon and label in its `tone`,
+   * `details` on hover, the same click and `actions` menu) in the git status
+   * row of the session it decorates, beside the branch and hash; for an item
+   * of a session's `bySession`. It stays in the banner and on the session's
+   * card. Left out, it is only there. Only where `api.features` includes
+   * "git-row-decorations".
+   */
+  gitRow?: boolean | undefined;
 };
 
 /**
