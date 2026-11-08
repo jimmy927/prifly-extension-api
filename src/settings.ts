@@ -21,8 +21,16 @@ export type SettingField = {
   label: string;
   /** A line under the control; "" when left out. */
   description?: string;
-  type: "boolean" | "number" | "string" | "choices" | "select";
-  /** Fits the type; a list of options for "choices", one of the options for "select". */
+  type: "boolean" | "number" | "string" | "choices" | "select" | "secret";
+  /**
+   * Fits the type; a list of options for "choices", one of the options for
+   * "select". For "secret" it is `false` whatever the manifest says: the
+   * field is a masked key box, `api.settings[id]` is whether a key is stored
+   * (`true`/`false`), and the key itself is `api.secrets.get(id)`, sealed in
+   * this extension's own secrets and never in `api.settings`. The reader
+   * removes it with the box's Remove. Needs `api.features` to include
+   * "setting-secret" and "secrets" (a manifest needing `api.secrets`).
+   */
   default: SettingValue;
   /**
    * For "choices": the boxes offered, any number of them ticked. For "select":

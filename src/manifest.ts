@@ -53,7 +53,33 @@ export type ManifestLaunchEntry = {
   starts?: boolean;
 };
 
-/** A window of the extension's own, a button in the status bar; answered by the module's `panel`. */
+/**
+ * A window of the extension's own, a button in the status bar; answered by the module's `panel`.
+ *
+ * Its page talks to the window with `parent.postMessage(message, "*")` and
+ * hears it on `window`'s `message` events: `prifly-look` (the window's
+ * colours), `prifly-launch`, `prifly-open-session`, `prifly-open-terminal`.
+ *
+ * Voice commands, where `api.features` includes "panel-voice": the reader says
+ * "Prifly" and every control on screen shows its spoken name, the page's
+ * included, and the next words click one. The window asks the page
+ *
+ *     { type: "prifly-say-list" }
+ *
+ * when the page loads and each time the names go up; the page answers within
+ * 300 ms, and may send the same again by itself whenever its controls change:
+ *
+ *     parent.postMessage({ type: "prifly-say-targets", targets: [
+ *       { id: "refresh", name: "refresh", rect: { x: 12, y: 8, width: 72, height: 28 } },
+ *     ] }, "*")
+ *
+ * `name` is what the reader says: one to three plain words, unlike any other
+ * on the page. `rect` is the control's box in the page's own CSS pixels
+ * (`getBoundingClientRect()`), where its name is drawn; left out, the names
+ * stand in a column at the frame's top left. When the reader says a name the
+ * window sends `{ type: "prifly-say", id }`, and the page clicks that
+ * control. A page that does not answer has no voice targets.
+ */
 export type ManifestPanelEntry = {
   /** `^[a-z0-9][a-z0-9-]*$`. */
   id: string;
