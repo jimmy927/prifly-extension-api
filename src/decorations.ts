@@ -42,6 +42,7 @@ export type DecorationIcon =
   | "whatsapp"
   | "messenger"
   | "prifly"
+  | "x"
   | "dot";
 
 /**

@@ -90,6 +90,13 @@ export type ManifestPanelEntry = {
   folder: string;
   /** Default "index.html". */
   page?: string;
+  /**
+   * True when the module serves the panel media from a folder of its choosing:
+   * it calls `api.panelMedia(id, absoluteFolder)` and the page loads
+   * `media/<path>` (video, audio, subtitles, images, with byte ranges). Where
+   * `api.features` includes "panel-media".
+   */
+  media?: boolean;
 };
 
 export type ExtensionManifest = {
@@ -135,4 +142,12 @@ export type ExtensionManifest = {
   panels?: ManifestPanelEntry[];
   /** The form in the Extensions dialog; the values reach it as `api.settings`. */
   settings?: SettingField[];
+  /**
+   * The extension hears the reader's dictation and may mark words in the
+   * message box (`ExtensionDictationApi`, `dictation.ts`); with `audio`, each
+   * piece's audio too. Settings → Extensions shows it as "Hears your
+   * dictation (with audio)" or "(text only)". Left out, no `onDictationPiece`
+   * and no `markDictation`.
+   */
+  dictation?: { audio?: boolean };
 };

@@ -75,6 +75,18 @@ export type ConfirmSpec = {
    */
   images?: ConfirmImage[];
   /**
+   * Pages drawn as tabs on the card beside its content: each a self-contained
+   * HTML document (inline CSS, images as data: URIs), shown sandboxed with no
+   * scripts. The editable content (`confirmEdit`) or plain content is its own
+   * tab, labelled `contentLabel`, default "Text". The first preview is shown
+   * first. At most 6, each at most 4 MB; any beyond is dropped with a log line,
+   * never the card. Not on a mail card. Where `api.features` includes
+   * "confirm-previews".
+   */
+  previews?: { label: string; html: string }[];
+  /** The content tab's label when there are `previews`: "Edit text". Default "Text". */
+  contentLabel?: string;
+  /**
    * The session to ask over, as for `DialogSpec`. Left out, the session whose
    * tool call is running: what a tool's write wants.
    */
