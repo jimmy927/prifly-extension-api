@@ -158,9 +158,15 @@ export type StartAnswer = { started: true; sessionId: string } | { started: fals
  * A request from one of the extension's own windows (`panels` in the
  * manifest): the page fetched `api/<path>` beside itself. `query` is the
  * URL's query; `body` a POST's JSON, or null.
+ *
+ * A request from a session view (`sessionViews`, `api.showSessionView`) also
+ * has `sessionId` and `params`: the session the view is shown in and what
+ * `showSessionView` gave for it.
  */
 export type PanelRequest = {
   path: string;
   query: Record<string, string>;
   body: unknown;
+  sessionId?: string;
+  params?: Record<string, string>;
 };

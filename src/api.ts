@@ -11,6 +11,7 @@ import type {
 import type {
   AskSnoozeAnswer,
   AskSnoozeSpec,
+  ConfirmFormField,
   ConfirmMail,
   ConfirmSpec,
   DialogAnswer,
@@ -44,7 +45,7 @@ import type { ExtensionToolsApi, ExtensionVaultApi } from "./tools";
 export type ExtensionApi = ExtensionDictationApi & {
   /**
    * What this prifly accepts beyond the first version, by name: "pick-amount-limit"
-   * (`limit` on a `ctx.pick` amount), "pick-links" (`links` on a `ctx.pick`), "pick-cells" (`titles` and `cellKinds` on a `ctx.pick`), "panel-open-session" (a panel page's `prifly-open-session` message opens a session, see `panel.ts`), "panel-open-terminal" (a panel page's `prifly-open-terminal` message opens the shell the module's `terminal` export names), "panel-voice" (a panel page's controls are clicked by voice through `prifly-say-list`, `prifly-say-targets` and `prifly-say`, see `ManifestPanelEntry`), "panel-session" (a panel docked beside a session's transcript is loaded with `session=<session id>` in its query string, see `panel.ts`),"start-session" (`api.start`), "settings" (`api.settings` and `api.onSettings`), "open-url" (`api.openUrl`), "open-url-apps" (`api.openUrl` also opens `whatsapp:` and `trello:` links in their desktop apps), "tool-scratchpad" (`ctx.scratchpad` of a tool call), "secrets" (`api.secrets`), "pair-dialog" (`api.pair`), "helper" (`api.helper`), "state" (`api.state`), "vault-ssh" (`api.vault.ssh`), "vault-file" (`api.vault.file`), "campaign-holds" (`api.campaigns`), "confirm" (`api.confirm`), "choose-mail" (`api.chooseMail`), "confirm-edit" (`api.confirmEdit`), "choose-mail-edit" (`api.chooseMailEdit`), "status" (`api.status`), "speech-backend" (`api.setSpeechBackend`), "rent-from-dialog" (`api.onRent`, and `setup` and `rent` on a reported machine), "git-there" (`api.git`, and `machine` on a session), "git-row-decorations" (`gitRow` on a session's decoration), "launch-machine" (`machine` on a `Launch`), "session-apps" (`apps` on a session, and `api.onSessionApps`), "ask-snooze" (`api.askSnooze`; with it, `api.snooze` is refused outside a handler for the reader's clicks), "session-facts" (`brief`, `repo`, `branch`, `waitsOn`, `asksYou`, `snoozedUntil` and `parentId` on a session), "read-tools" (`api.tools.read`, for the tools the manifest's `reads` lists), "llm-ask" (`api.llm`), "confirm-doc" (`doc` on a `ConfirmSpec`), "confirm-events" (`events` on a `ConfirmSpec`), "setting-secret" (a settings field of `type: "secret"`, see `SettingField`), "confirm-previews" (`previews` and `contentLabel` on a `ConfirmSpec`), "panel-media" (`api.panelMedia`, and `media` on a manifest panel), "dictation-pieces" (`api.onDictationPiece` and `api.onDictationCorrection`, for a manifest that declares `dictation`), "dictation-marks" (`api.markDictation` and `api.onDictationMarkAction`, likewise). Absent on a prifly that predates the list.
+   * (`limit` on a `ctx.pick` amount), "pick-links" (`links` on a `ctx.pick`), "pick-cells" (`titles` and `cellKinds` on a `ctx.pick`), "panel-open-session" (a panel page's `prifly-open-session` message opens a session, see `panel.ts`), "panel-open-terminal" (a panel page's `prifly-open-terminal` message opens the shell the module's `terminal` export names), "panel-voice" (a panel page's controls are clicked by voice through `prifly-say-list`, `prifly-say-targets` and `prifly-say`, see `ManifestPanelEntry`), "panel-session" (a panel docked beside a session's transcript is loaded with `session=<session id>` in its query string, see `panel.ts`),"start-session" (`api.start`), "settings" (`api.settings` and `api.onSettings`), "open-url" (`api.openUrl`), "open-url-apps" (`api.openUrl` also opens `whatsapp:` and `trello:` links in their desktop apps), "tool-scratchpad" (`ctx.scratchpad` of a tool call), "secrets" (`api.secrets`), "pair-dialog" (`api.pair`), "helper" (`api.helper`), "state" (`api.state`), "vault-ssh" (`api.vault.ssh`), "vault-file" (`api.vault.file`), "campaign-holds" (`api.campaigns`), "confirm" (`api.confirm`), "choose-mail" (`api.chooseMail`), "confirm-edit" (`api.confirmEdit`), "choose-mail-edit" (`api.chooseMailEdit`), "status" (`api.status`), "speech-backend" (`api.setSpeechBackend`), "rent-from-dialog" (`api.onRent`, and `setup` and `rent` on a reported machine), "git-there" (`api.git`, and `machine` on a session), "git-row-decorations" (`gitRow` on a session's decoration), "launch-machine" (`machine` on a `Launch`), "session-apps" (`apps` on a session, and `api.onSessionApps`), "ask-snooze" (`api.askSnooze`; with it, `api.snooze` is refused outside a handler for the reader's clicks), "session-facts" (`brief`, `repo`, `branch`, `waitsOn`, `asksYou`, `snoozedUntil` and `parentId` on a session), "read-tools" (`api.tools.read`, for the tools the manifest's `reads` lists), "llm-ask" (`api.llm`), "confirm-doc" (`doc` on a `ConfirmSpec`), "confirm-events" (`events` on a `ConfirmSpec`), "setting-secret" (a settings field of `type: "secret"`, see `SettingField`), "confirm-previews" (`previews` and `contentLabel` on a `ConfirmSpec`), "confirm-form" (`form` on a `ConfirmSpec`, and `api.confirmForm`), "panel-media" (`api.panelMedia`, and `media` on a manifest panel), "session-views" (`sessionViews` in the manifest, `api.showSessionView` and `api.clearSessionView`),"dictation-pieces" (`api.onDictationPiece` and `api.onDictationCorrection`, for a manifest that declares `dictation`), "dictation-marks" (`api.markDictation` and `api.onDictationMarkAction`, likewise), "dictation-mark-levels" (`level`, `said`, `say` and `confidence` on a `DictationMark`, which also stays underlined in the sent message's row). Absent on a prifly that predates the list.
    */
   features?: readonly string[];
   /**
@@ -330,6 +331,17 @@ export type ExtensionApi = ExtensionDictationApi & {
    */
   confirmEdit?(spec: ConfirmSpec & { content: string }): Promise<string | null>;
   /**
+   * `confirm` with a form the reader fills in: the same card, `form`'s
+   * fields drawn in place of `content` (in its tab, with `previews`).
+   * Resolves with every field's value as the reader left it, by `key`, when
+   * they Confirm; null on Cancel, on feedback and on every no `confirm`
+   * answers false to. Confirm stays off while a `required` field is empty.
+   * Where `api.features` includes "confirm-form".
+   */
+  confirmForm?(
+    spec: ConfirmSpec & { form: ConfirmFormField[] },
+  ): Promise<Record<string, string> | null>;
+  /**
    * `chooseMail` with the text the reader may change: the subject and the
    * body's plain `mail.text` are editable fields; the inline pictures
    * (`mail.images`) and the attachments stay shown. A line reading exactly
@@ -376,6 +388,18 @@ export type ExtensionApi = ExtensionDictationApi & {
    * `media`. Where `api.features` includes "panel-media".
    */
   panelMedia?(panelId: string, folder: string): void;
+  /**
+   * Shows the manifest's session view `viewId` (`sessionViews`) in the App tab of the
+   * session `sessionId` (its full id), beside the chat: the window opens the App tab
+   * as a column next to the transcript when the view first appears. `params` (string
+   * values) are what the view's page asks `api/…` for, as `request.params`. Showing a
+   * view that is shown already replaces its params and reloads the page. The view
+   * is remembered across host restarts. Throws on a view the manifest does not declare
+   * and on params that are not strings. Where `api.features` includes "session-views".
+   */
+  showSessionView?(sessionId: string, viewId: string, params: Record<string, string>): void;
+  /** Takes the view away from the session's App tab; a view not shown is left alone. Where `api.features` includes "session-views". */
+  clearSessionView?(sessionId: string, viewId: string): void;
   /**
    * Opens a pairing dialog in every window, for linking a device: a QR code
    * to scan or a code to type, which the extension keeps current with

@@ -87,6 +87,13 @@ export type ConfirmSpec = {
   /** The content tab's label when there are `previews`: "Edit text". Default "Text". */
   contentLabel?: string;
   /**
+   * Labelled fields drawn in place of `content` (in its tab, with `previews`):
+   * what `api.confirmForm` asks the reader to fill in. A prifly that predates
+   * it shows `content` and `details` only, so keep them filled. Where
+   * `api.features` includes "confirm-form".
+   */
+  form?: ConfirmFormField[];
+  /**
    * The session to ask over, as for `DialogSpec`. Left out, the session whose
    * tool call is running: what a tool's write wants.
    */
@@ -161,6 +168,22 @@ export type ConfirmEvents = {
 
 /** A picture on a confirm card: see `ConfirmSpec.images`. */
 export type ConfirmImage = { mimeType: string; bytes: Uint8Array; name?: string };
+/**
+ * One field of a confirm card's form (`ConfirmSpec.form`): a line of `text`
+ * (the default), a `textarea` drawn the card's full width, a `choice` among
+ * `options`, or a `date` (YYYY-MM-DD). A `required` one left empty keeps
+ * Confirm off and says so.
+ */
+export type ConfirmFormField = {
+  key: string;
+  label: string;
+  kind?: "text" | "textarea" | "choice" | "date";
+  value: string;
+  options?: { value: string; label: string }[];
+  required?: boolean;
+  /** A line under the field. */
+  hint?: string;
+};
 
 /** A mail on a confirm card: see `ConfirmSpec.mail`. */
 export type ConfirmMail = {

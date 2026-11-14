@@ -99,6 +99,32 @@ export type ManifestPanelEntry = {
   media?: boolean;
 };
 
+/**
+ * A page of the extension's own that it shows inside a session's App tab, beside
+ * the chat: `api.showSessionView(sessionId, id, params)` shows it, `clearSessionView`
+ * takes it away. Served like a panel (`folder`, `page`, `media`, and the module's `panel`
+ * export answering `api/<path>`), at
+ * `/extension-view/<extension>/<id>/<session id>/<path>`: a relative `fetch("api/…")`
+ * therefore reaches `panel(id, request)` with `request.sessionId` and the `request.params`
+ * given to `showSessionView`. Give it an `id` no panel of the extension has. Where
+ * `api.features` includes "session-views".
+ *
+ * The page talks to the window as a panel's does (`prifly-look`), and can put a line
+ * into the session's message box: `parent.postMessage({ type: "prifly-quote", text }, "*")`.
+ */
+export type ManifestSessionViewEntry = {
+  /** `^[a-z0-9][a-z0-9-]*$`. */
+  id: string;
+  /** The App tab's name for the view. */
+  label: string;
+  /** Relative to the extension's root: where `page` and what it loads are served from. */
+  folder: string;
+  /** Default "index.html". */
+  page?: string;
+  /** As on a panel: the module names a media folder with `api.panelMedia(id, folder)`, served at `media/<path>`. */
+  media?: boolean;
+};
+
 export type ExtensionManifest = {
   /** `^[a-z0-9][a-z0-9-]*$`, unique among installed extensions. */
   id: string;
@@ -140,6 +166,8 @@ export type ExtensionManifest = {
    * a service plugin, whose state belongs on its launch board.
    */
   panels?: ManifestPanelEntry[];
+  /** Pages the extension shows in a session's App tab, beside the chat. */
+  sessionViews?: ManifestSessionViewEntry[];
   /** The form in the Extensions dialog; the values reach it as `api.settings`. */
   settings?: SettingField[];
   /**

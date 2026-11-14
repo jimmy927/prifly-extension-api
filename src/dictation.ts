@@ -82,7 +82,11 @@ export type DictationMarkAction = {
  * A word range the window underlines, wavy, in the message box. With the
  * caret in it the line under the box reads `label` in bold, then `detail`,
  * with Listen (the window's own: the marked word read aloud) and the mark's
- * `actions`.
+ * `actions`. The marks of a message the reader sent stay underlined in its
+ * row in the transcript, with `label`, `level`, `said`, `say`, `confidence`,
+ * `detail` and the actions on a card when the reader points at the word; a
+ * mark an extension gives after the message went (judging can take seconds)
+ * is drawn there too.
  */
 export type DictationMark = {
   /** Character offsets in the piece's `text` — or, with `at`, from `at` in the box. */
@@ -94,6 +98,18 @@ export type DictationMark = {
   detail: string;
   /** At most 4. */
   actions?: DictationMarkAction[];
+  /**
+   * How sure the extension is, which colours the underline: "sure" red,
+   * "maybe" amber. Without it the mark is "sure". Where `api.features`
+   * includes "dictation-mark-levels"; an older prifly refuses the field.
+   */
+  level?: "sure" | "maybe";
+  /** The word as the reader said it, as the extension spells it: "BROW-sser". At most 40 characters. Needs "dictation-mark-levels". */
+  said?: string;
+  /** The word as it should be said: "BROW-zzer". At most 40 characters. Needs "dictation-mark-levels". */
+  say?: string;
+  /** How sure, 0 to 1: shown as a percentage beside the level when given. Needs "dictation-mark-levels". */
+  confidence?: number;
 };
 
 /** `markDictation`'s argument: the marks for piece `piece` of dictation `dict` in `sessionId`'s box. */
