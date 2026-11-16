@@ -33,6 +33,7 @@ export type * from "./launch";
 export type * from "./llm";
 export type * from "./manifest";
 export type * from "./secrets";
+export type * from "./session-start";
 export type * from "./settings";
 export type * from "./state";
 export type * from "./tools";

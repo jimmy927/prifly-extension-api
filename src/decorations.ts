@@ -125,12 +125,29 @@ export type Decoration = {
    * the item is the state of. Only for the `statusBar` items of `show`: the
    * status bar then draws no chip, but that panel's button, its icon coloured
    * by `tone`, its hover holding `label` and `details` (under the panel's
-   * description), and a click that opens the panel as before. `icon`, `url`,
+   * description), and a click that opens the panel as before (with `click`
+   * set, a right click; the left click runs `click`). `icon`, `url`,
    * `terminal` and `actions` are not shown then. An id naming no panel of the
    * extension is shown as an ordinary chip, with a warning in the log; on an
    * item of a session's `bySession` the field changes nothing.
    */
   panel?: string | undefined;
+  /**
+   * What a plain left click on a `statusBar` item of `show` does in place of
+   * opening anything: it calls the module's `action` export, or the handler
+   * given to `api.onAction`, with the item's `key` and this id — as choosing
+   * a menu action does, but with no confirm, no picker and no menu, and
+   * without opening `url`, `terminal`, the launcher's view or the `panel`'s
+   * dialog. The handler runs as the reader's click, so `api.startSession`,
+   * `api.openSession` and `api.snooze` may be called in it. What it returns is
+   * said to the reader ("" says nothing); what it throws is shown as the
+   * failure. On an item that names a `panel`, the panel's button calls it on
+   * a left click and opens the panel on a right click. On an item of a
+   * session's `bySession` it changes nothing. Only where `api.features`
+   * includes "status-click": an older prifly refuses the unknown field and
+   * drops the item.
+   */
+  click?: string | undefined;
   /**
    * Where the item stands now — the column a Trello card is in, "In
    * Progress". The archive dialog names it beside the item ("in In
