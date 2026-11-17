@@ -76,6 +76,19 @@ export type DictationMarkAction = {
   /** One or two words: "Not a mistake". */
   label: string;
   icon?: DecorationIcon;
+  /**
+   * "play": the button plays audio. The click reaches `onDictationMarkAction`,
+   * whose handler returns (or resolves to) `{ audio }`, which the window
+   * plays; the button shows a spinner meanwhile. Where `api.features`
+   * includes "dictation-mark-audio"; an older prifly refuses the field.
+   */
+  kind?: "play";
+};
+
+/** What a play action's handler answers with: a clip the window plays. */
+export type DictationMarkAudio = {
+  /** The absolute path of a .wav or .mp3 on this machine. Only a path returned here is ever served to the window, but it then stays servable for that session until prifly's host restarts: put nothing private in a clip. A handler that has not answered after 20 s counts as failed. */
+  audio: string;
 };
 
 /**
@@ -168,6 +181,16 @@ export type ExtensionDictationApi = {
    * declares `dictation`.
    */
   markDictation?(marks: DictationMarks): void;
-  /** Hear the reader click one of this extension's mark actions. Where `markDictation` is. */
-  onDictationMarkAction?(handler: (click: DictationMarkClick) => void | Promise<void>): void;
+  /**
+   * Hear the reader click one of this extension's mark actions. Where
+   * `markDictation` is. For an action with `kind: "play"` (where
+   * `api.features` includes "dictation-mark-audio") the handler's
+   * `{ audio }` is played in the window; anything else, or a throw, shows
+   * the reader "Couldn't play".
+   */
+  onDictationMarkAction?(
+    handler: (
+      click: DictationMarkClick,
+    ) => void | DictationMarkAudio | Promise<void | DictationMarkAudio>,
+  ): void;
 };
